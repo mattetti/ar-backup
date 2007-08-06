@@ -4,23 +4,20 @@ namespace :backup do
 
     # Get the build number by parsing the svn info data.
     # This function is inside the rake task so we can use it with sake
-    desc 'Retrieve the SVN revision'
-    task :build_number do
-      def get_build_number
-        begin
-          @svn_info = ` svn info --revision HEAD`
-          @svn_info.scan(/\nRevision:.(\d*)\n/)[0][0]
-        rescue
-          '?'
-        end
+    def get_build_number
+      begin
+        @svn_info = ` svn info --revision HEAD`
+        @svn_info.scan(/\nRevision:.(\d*)\n/)[0][0]
+      rescue
+        '?'
       end
-      
-      # SVN  Build number
-      BUILD_NUMBER = get_build_number
     end
     
+    # SVN  Build number
+    BUILD_NUMBER = get_build_number
+    
     desc 'Create YAML fixtures from your DB content'
-    task :extract_content => [:environment, :build_number] do
+    task :extract_content => :environment do
       sql  = "SELECT * FROM %s"
       ActiveRecord::Base.establish_connection(ActiveRecord::Base.configurations[RAILS_ENV])
       ActiveRecord::Base.connection.tables.each do |table_name|
@@ -31,13 +28,14 @@ namespace :backup do
           data = ActiveRecord::Base.connection.select_all(sql % table_name)
           file.write data.inject({}) { |hash, record|
             hash["#{table_name}_#{i.succ!}"] = record
-            hash }.to_yaml
+            hash 
+            }.to_yaml
           end
         end
       end
 
       desc 'Dump the db schema'
-      task :extract_schema => [:environment, :build_number] do
+      task :extract_schema => :environment do
         require 'active_record/schema_dumper'
         ActiveRecord::Base.establish_connection(ActiveRecord::Base.configurations[RAILS_ENV])
         FileUtils.mkdir_p("#{RAILS_ROOT}/backup/#{RAILS_ENV}/build_#{BUILD_NUMBER}/schema/") 
@@ -50,7 +48,7 @@ namespace :backup do
       task :dump => ['backup:db:extract_content', 'backup:db:extract_schema']
       
       desc 'load your backed up data from a previous build. rake backup:db:load BUILD=1182 or rake backup:db:load BUILD=1182 DUMP_ENV=production'
-      task :load => [:environment, :build_number] do
+      task :load => :environment do
         @build     = ENV['BUILD'] || BUILD_NUMBER
         @env       = ENV['DUMP_ENV'] || RAILS_ENV
         load("#{RAILS_ROOT}/backup/#{@env}/build_#{@build}/schema/schema.rb")
