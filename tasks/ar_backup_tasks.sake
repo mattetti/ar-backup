@@ -1,4 +1,3 @@
-desc 'Retrieve the SVN revision'
 task 'backup:db:build_number' do
   def get_build_number
     begin
