@@ -1,17 +1,52 @@
-ActiveRecord-backup
-=======
+=ActiveRecord-backup
 
 Using rake tasks, dump your schema and data into yml files. One folder gets created per SVN revision. You can then simply load any previous data using rake.
 
 prerequisite: Your project must be under SVN.
 
+==Usage:
 
-Example
-=======
+rake backup:db:dump               # create a backup folder containing your db schema and content data (see backup/{env}/build_{build number})
+rake backup:db:extract_content    # Create YAML fixtures from your DB content
+rake backup:db:extract_schema     # Dump the db schema
+rake backup:db:load               # load your backed up data from a previous build. rake backup:db:load BUILD=1182 or rake backup:db:load BUILD=1182 DUMP_ENV=production
+
+
+==Example
 
     rake backup:db:dump
 
     rake backup:db:load BUILD=2547
 
+==Capistrano 2 usage example   
+
+(you first need to create a backup folder) 
+
+    set :backup_dir, "#{deploy_to}/backup"
+
+    before :deploy do
+      db.backup
+      db.move_backup
+    end
+
+    namespace :db do
+      desc 'create the production database'
+      task :create do
+        run "cd #{current_release} && rake db:create RAILS_ENV=production"
+      end
+
+      desc 'dump the database schema and content'
+      task :backup do
+        run "cd #{current_release} && rake backup:db:dump RAILS_ENV=production"
+      end
+
+      desc 'timestamp the backup file'
+      task :move_backup do
+        run "cd #{current_release} && mv backup/production #{backup_dir}/production_#{Time.now.strftime("%Y-%m-%d_%H-%M")}"
+      end
+    end
+
+==Contributors
+ Cyril Mougel : cyril.mougel@gmail.com (ar_backup windows compatible and the revision number is parsed in a more efficient way)
 
 Copyright (c) 2007 Matt Aimonetti, released under the MIT license
