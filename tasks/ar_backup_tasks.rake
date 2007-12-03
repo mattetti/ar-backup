@@ -28,13 +28,17 @@ namespace :backup do
 
         File.open("#{RAILS_ROOT}/backup/#{RAILS_ENV}/build_#{BUILD_NUMBER}/fixtures/#{table_name}.yml", 'w') do |file|
           data = ActiveRecord::Base.connection.select_all(sql % table_name)
-          file.write data.inject({}) { |hash, record|
-            hash["#{table_name}_#{i.succ!}"] = record
-            hash 
+          nb_record = data.size
+          
+          while i.to_i <  nb_record do
+            file.write data[i.to_i, 100].inject({}) { |hash, record|
+              hash["#{table_name}_#{i.succ!}"] = record
+              hash
             }.to_yaml
           end
         end
       end
+    end
 
       desc 'Dump the db schema'
       task :extract_schema => :environment do
