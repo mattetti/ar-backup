@@ -34,7 +34,8 @@ namespace :backup do
             file.write data[i.to_i, 100].inject({}) { |hash, record|
               hash["#{table_name}_#{i.succ!}"] = record
               hash
-            }.to_yaml
+            }.to_yaml[5..-1]
+            # Delete the "--- \n" part in top of all yaml return
           end
         end
       end
